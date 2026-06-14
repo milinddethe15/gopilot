@@ -6,7 +6,7 @@ An agentic AI system that reads GitHub issues from open-source Go projects, expl
 
 Watch the agent autonomously resolve a real issue:
 
-![Agent Demo](outputs/go-playground_validator_1543/demo.mp4)
+https://github.com/user-attachments/assets/425875e0-fe5e-47a0-8f19-badb66e46d3f
 
 - **Issue:** [go-playground/validator#1543](https://github.com/go-playground/validator/issues/1543)
 - **Generated Patch**: [diff.patch](outputs/go-playground_validator_1543/diff.patch)
