@@ -61,15 +61,9 @@ def main(
         sys.exit(1)
     owner, repo_name = repo.split("/", 1)
 
-    # ---- Check env vars ----
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    # if not api_key:
-    #     console.print("[red]ANTHROPIC_API_KEY environment variable not set[/red]")
-    #     sys.exit(1)
-
-    auth_token = os.environ.get("ANTHROPIC_AUTH_TOKEN", None)
-
-    base_url = os.environ.get("ANTHROPIC_BASE_URL", None)
+    # ---- LLM configuration ----
+    llm_api_key = os.environ.get("LLM_API_KEY", None)
+    llm_base_url = os.environ.get("LLM_BASE_URL", None)
 
     github_token = os.environ.get("GITHUB_TOKEN", "")
     if not github_token:
@@ -88,11 +82,10 @@ def main(
     from agent.orchestrator import Orchestrator
 
     orchestrator = Orchestrator(
-        anthropic_api_key=api_key,
+        llm_api_key=llm_api_key,
+        llm_base_url=llm_base_url,
         github_token=github_token or None,
         config=config,
-        anthropic_auth_key=auth_token,
-        anthropic_base_url=base_url
     )
 
     try:

@@ -1,5 +1,7 @@
 from __future__ import annotations
-import anthropic
+from typing import Any
+
+import litellm
 from rich.console import Console
 
 from models import Issue, Plan, LinkedPR
@@ -13,11 +15,13 @@ _BODY_RE = __import__("re").compile(r"##\s*BODY\s*\n(.*)", __import__("re").DOTA
 class PRWriter:
     def __init__(
         self,
-        client: anthropic.Anthropic,
+        api_key: str | None,
+        base_url: str | None,
         config: dict,
         system_prompt: str,
     ):
-        self.client = client
+        self.api_key = api_key
+        self.base_url = base_url
         self.config = config
         self.system_prompt = system_prompt
 
@@ -33,14 +37,21 @@ class PRWriter:
 
         console.print("[bold cyan]PR writer generating summary…[/bold cyan]")
 
-        response = self.client.messages.create(
+        call_kwargs: dict[str, Any] = dict(
             model=self.config["model"],
             max_tokens=2048,
-            system=self.system_prompt,
-            messages=[{"role": "user", "content": user_message}],
+            messages=[
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_message},
+            ],
         )
+        if self.api_key:
+            call_kwargs["api_key"] = self.api_key
+        if self.base_url:
+            call_kwargs["base_url"] = self.base_url
 
-        raw = "".join(b.text for b in response.content if b.type == "text")
+        response = litellm.completion(**call_kwargs)
+        raw = response.choices[0].message.content or ""
         title, body = self._parse(raw, issue.number)
         console.print(f"[green]✓ PR title: {title!r}[/green]")
         return title, body

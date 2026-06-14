@@ -1,8 +1,9 @@
 from __future__ import annotations
 import re
 from pathlib import Path
+from typing import Any
 
-import anthropic
+import litellm
 from rich.console import Console
 
 from models import CodeEdit, Plan, Issue, ValidationResult
@@ -38,18 +39,20 @@ class Coder:
     Single-shot code generator.
 
     Takes the planner's Plan, reads the relevant files in full, and asks
-    Claude to produce SEARCH/REPLACE blocks. On validation failure, accepts
+    the LLM to produce SEARCH/REPLACE blocks. On validation failure, accepts
     the error context and produces corrective blocks only.
     """
 
     def __init__(
         self,
-        client: anthropic.Anthropic,
+        api_key: str | None,
+        base_url: str | None,
         config: dict,
         repo_path: Path,
         system_prompt: str,
     ):
-        self.client = client
+        self.api_key = api_key
+        self.base_url = base_url
         self.config = config
         self.repo_path = repo_path
         self.system_prompt = system_prompt
@@ -76,14 +79,21 @@ class Coder:
 
         console.print("[bold cyan]Coder generating edits…[/bold cyan]")
 
-        response = self.client.messages.create(
+        call_kwargs: dict[str, Any] = dict(
             model=self.config["model"],
             max_tokens=self.config.get("max_tokens", 8192),
-            system=self.system_prompt,
-            messages=[{"role": "user", "content": user_message}],
+            messages=[
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_message},
+            ],
         )
+        if self.api_key:
+            call_kwargs["api_key"] = self.api_key
+        if self.base_url:
+            call_kwargs["base_url"] = self.base_url
 
-        raw_text = "".join(b.text for b in response.content if b.type == "text")
+        response = litellm.completion(**call_kwargs)
+        raw_text = response.choices[0].message.content or ""
         edits = self._parse_edits(raw_text)
 
         if not edits:

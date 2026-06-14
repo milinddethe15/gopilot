@@ -14,10 +14,10 @@ Each layer uses the best-fit tool rather than building from scratch.
 │  Repo clone      git                          standard, shallow clone  │
 │  Repo map        go list -json + regex        Go-native package graph │
 │  Code search     ripgrep (grep fallback)      fast, context-aware     │
-│  Planning        Claude API (tool-call loop)  multi-step exploration  │
-│  Code gen        Claude API (single call)     SEARCH/REPLACE blocks   │
+│  Planning        LiteLLM (tool-call loop)     multi-step exploration  │
+│  Code gen        LiteLLM (single call)        SEARCH/REPLACE blocks   │
 │  Validation      go build + vet + test        ground truth            │
-│  PR summary      Claude API (single call)     convention-aware prose  │
+│  PR summary      LiteLLM (single call)        convention-aware prose  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -42,7 +42,7 @@ Planner ──► tool-calling loop (up to 15 iterations)
             → plan.json + tool_calls.jsonl
      │
      ▼
-Coder ──► single Claude call with full file contents + plan
+Coder ──► single LLM call with full file contents + plan
           output: SEARCH/REPLACE blocks
           applied via exact-match (+ normalised-whitespace fallback)
      │
@@ -51,7 +51,7 @@ Validator ──► go build → go vet → go test
               on failure: feed stderr back to Coder (up to 3 retries)
      │
      ▼
-PRWriter ──► single Claude call with diff + issue + reference PRs
+PRWriter ──► single LLM call with diff + issue + reference PRs
              → pr_summary.md
      │
      ▼
@@ -79,11 +79,21 @@ cd gopilot
 pip install -r requirements.txt
 ```
 
-Set environment variables:
+Set environment variables for your chosen provider.
+LiteLLM reads the standard per-provider key automatically:
 
 ```bash
+# Pick ONE of the following (matching your config.yaml model)
+export OPENAI_API_KEY=sk-...
 export ANTHROPIC_API_KEY=sk-ant-...
-export GITHUB_TOKEN=ghp_...      # optional but avoids rate limits
+export GEMINI_API_KEY=AI...
+export GROQ_API_KEY=gsk_...
+export OPENROUTER_API_KEY=sk-or-...   # model: openrouter/<provider>/<model>
+
+# Optional: point at a custom proxy or local Ollama
+# export LLM_BASE_URL=http://localhost:11434
+
+export GITHUB_TOKEN=ghp_...           # optional but avoids rate limits
 ```
 
 ## Usage
@@ -106,9 +116,10 @@ Output artefacts are written to `outputs/{owner}_{repo}_{issue}/`.
 
 ## Design Decisions
 
-**Why not LangChain/LlamaIndex?**
-They obscure the agent logic. Using the Anthropic SDK directly makes
-the tool-calling loop explicit and easy to debug.
+**Why LiteLLM instead of a vendor SDK?**
+LiteLLM provides a single OpenAI-compatible interface over 100+ providers
+(OpenAI, Anthropic, Gemini, Groq, Ollama, OpenRouter, …). Swapping models
+is a one-line change in `config.yaml` with no code changes required.
 
 **Why SEARCH/REPLACE instead of unified diffs?**
 Unified diffs require correct line numbers, which LLMs get wrong under pressure.
@@ -130,7 +141,12 @@ known file contents. Separating them keeps each Claude call well-scoped.
 Edit `config.yaml`:
 
 ```yaml
-model: claude-sonnet-4-6
+# LiteLLM model string: <provider>/<model-name>
+model: openai/gpt-4o              # OpenAI
+# model: anthropic/claude-opus-4-5  # Anthropic
+# model: gemini/gemini-2.0-flash    # Google Gemini
+# model: groq/llama3-70b-8192       # Groq
+# model: ollama/llama3              # local Ollama
 max_planning_tool_calls: 15   # max tool calls during exploration
 max_validation_retries: 3     # max coder→validate loops
 max_tokens: 8192

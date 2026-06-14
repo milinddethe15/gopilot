@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-import anthropic
+import litellm
 from rich.console import Console
 
 from models import Issue, Plan, ToolCall
@@ -15,77 +15,89 @@ from tools.file_ops import read_file, list_directory
 console = Console()
 
 # ---------------------------------------------------------------------------
-#  Tool definitions (Anthropic tool-use format)
+#  Tool definitions (OpenAI function-calling format, compatible with LiteLLM)
 # ---------------------------------------------------------------------------
 
 PLANNING_TOOLS: list[dict] = [
     {
-        "name": "read_file",
-        "description": (
-            "Read the full content of a file in the repository. "
-            "Always read a file before making decisions about it."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Relative path from repo root (e.g. 'baked_in.go' or 'cmd/root.go')",
-                }
-            },
-            "required": ["path"],
-        },
-    },
-    {
-        "name": "search_code",
-        "description": (
-            "Search for a pattern across Go files using ripgrep. "
-            "Use this to find function definitions, usages, and related code."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "pattern": {"type": "string", "description": "Literal string or regex pattern"},
-                "file_glob": {
-                    "type": "string",
-                    "description": "File glob to limit search scope (default: '*.go')",
-                    "default": "*.go",
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": (
+                "Read the full content of a file in the repository. "
+                "Always read a file before making decisions about it."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Relative path from repo root (e.g. 'baked_in.go' or 'cmd/root.go')",
+                    }
                 },
-                "context_lines": {
-                    "type": "integer",
-                    "description": "Lines of context around each match (default: 3)",
-                    "default": 3,
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_code",
+            "description": (
+                "Search for a pattern across Go files using ripgrep. "
+                "Use this to find function definitions, usages, and related code."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pattern": {"type": "string", "description": "Literal string or regex pattern"},
+                    "file_glob": {
+                        "type": "string",
+                        "description": "File glob to limit search scope (default: '*.go')",
+                        "default": "*.go",
+                    },
+                    "context_lines": {
+                        "type": "integer",
+                        "description": "Lines of context around each match (default: 3)",
+                        "default": 3,
+                    },
+                },
+                "required": ["pattern"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_directory",
+            "description": "List files and subdirectories. Useful for understanding project layout.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Relative path to directory (default: '.' = repo root)",
+                        "default": ".",
+                    }
                 },
             },
-            "required": ["pattern"],
         },
     },
     {
-        "name": "list_directory",
-        "description": "List files and subdirectories. Useful for understanding project layout.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "Relative path to directory (default: '.' = repo root)",
-                    "default": ".",
-                }
+        "type": "function",
+        "function": {
+            "name": "run_go_doc",
+            "description": "Run `go doc <symbol>` to get documentation for a package or symbol.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Package path or symbol (e.g. 'fmt.Errorf' or './...')",
+                    }
+                },
+                "required": ["symbol"],
             },
-        },
-    },
-    {
-        "name": "run_go_doc",
-        "description": "Run `go doc <symbol>` to get documentation for a package or symbol.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "symbol": {
-                    "type": "string",
-                    "description": "Package path or symbol (e.g. 'fmt.Errorf' or './...')",
-                }
-            },
-            "required": ["symbol"],
         },
     },
 ]
@@ -95,18 +107,21 @@ _PLAN_JSON_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
 class Planner:
     """
-    Runs a tool-calling loop with Claude until it emits a structured JSON plan.
-    All tool calls are logged for the output artefacts.
+    Runs a tool-calling loop with the configured LLM until it
+    emits a structured JSON plan.  All tool calls are logged for the output
+    artefacts.
     """
 
     def __init__(
         self,
-        client: anthropic.Anthropic,
+        api_key: str | None,
+        base_url: str | None,
         config: dict,
         repo_path: Path,
         system_prompt: str,
     ):
-        self.client = client
+        self.api_key = api_key
+        self.base_url = base_url
         self.config = config
         self.repo_path = repo_path
         self.system_prompt = system_prompt
@@ -115,56 +130,84 @@ class Planner:
 
     def plan(self, issue: Issue, repo_map: str) -> Plan:
         user_message = self._build_user_message(issue, repo_map)
-        messages: list[dict] = [{"role": "user", "content": user_message}]
+        messages: list[dict] = [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": user_message},
+        ]
         max_iterations = self.config.get("max_planning_tool_calls", 15)
 
         console.print("[bold cyan]Planner starting exploration loop…[/bold cyan]")
 
         for iteration in range(max_iterations):
-            response = self.client.messages.create(
+            call_kwargs: dict[str, Any] = dict(
                 model=self.config["model"],
                 max_tokens=self.config.get("max_tokens", 8192),
-                system=self.system_prompt,
                 tools=PLANNING_TOOLS,
                 messages=messages,
             )
+            if self.api_key:
+                call_kwargs["api_key"] = self.api_key
+            if self.base_url:
+                call_kwargs["base_url"] = self.base_url
 
-            # Accumulate tool calls for this turn
-            tool_results: list[dict] = []
-            has_tool_use = False
+            response = litellm.completion(**call_kwargs)
+            msg = response.choices[0].message
+            finish_reason = response.choices[0].finish_reason
 
-            for block in response.content:
-                if block.type == "text":
-                    # Check if this text contains the final plan
-                    plan = self._try_parse_plan(block.text)
-                    if plan:
-                        console.print(
-                            f"[green]✓ Plan produced after {iteration + 1} iteration(s)[/green]"
-                        )
-                        return plan
+            # ---- Check text content for a final JSON plan ----
+            text_content: str = msg.content or ""
+            if text_content:
+                plan = self._try_parse_plan(text_content)
+                if plan:
+                    console.print(
+                        f"[green]✓ Plan produced after {iteration + 1} iteration(s)[/green]"
+                    )
+                    return plan
 
-                elif block.type == "tool_use":
-                    has_tool_use = True
-                    tool_output = self._execute_tool(block.name, block.input)
+            # ---- Handle tool calls ----
+            tool_calls = msg.tool_calls or []
+            if tool_calls:
+                # Append the assistant turn (preserving tool_calls metadata)
+                messages.append({
+                    "role": "assistant",
+                    "content": text_content or None,
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            },
+                        }
+                        for tc in tool_calls
+                    ],
+                })
+
+                # Execute each tool and add results
+                for tc in tool_calls:
+                    name = tc.function.name
+                    try:
+                        inputs = json.loads(tc.function.arguments)
+                    except json.JSONDecodeError:
+                        inputs = {}
+
+                    tool_output = self._execute_tool(name, inputs)
                     self.tool_calls_log.append(
-                        ToolCall(name=block.name, input=block.input, output=tool_output)
+                        ToolCall(name=name, input=inputs, output=tool_output)
                     )
                     console.print(
-                        f"  [dim]→ {block.name}({self._fmt_input(block.input)})[/dim]"
+                        f"  [dim]→ {name}({self._fmt_input(inputs)})[/dim]"
                     )
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
                         "content": tool_output,
                     })
+                continue  # Next iteration with tool results in context
 
-            # Append assistant turn + tool results for next iteration
-            messages.append({"role": "assistant", "content": response.content})
-            if tool_results:
-                messages.append({"role": "user", "content": tool_results})
-
-            if response.stop_reason == "end_turn" and not has_tool_use:
-                # No more tool calls and no plan found — extract best-effort text
+            # ---- No tool calls and no plan found — model finished ----
+            if finish_reason == "stop":
                 break
 
         raise RuntimeError(

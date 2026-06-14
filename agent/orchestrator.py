@@ -5,7 +5,6 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-import anthropic
 from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
@@ -36,13 +35,13 @@ class Orchestrator:
 
     def __init__(
         self,
-        anthropic_api_key: str,
-        anthropic_auth_key: str,
-        anthropic_base_url: str,
+        llm_api_key: str | None,
+        llm_base_url: str | None,
         github_token: str | None,
         config: dict,
     ):
-        self.claude = anthropic.Anthropic(api_key=anthropic_api_key, auth_token=anthropic_auth_key, base_url=anthropic_base_url)
+        self.llm_api_key = llm_api_key
+        self.llm_base_url = llm_base_url
         self.github = GitHubClient(token=github_token)
         self.config = config
         self.prompts = self._load_prompts()
@@ -103,7 +102,11 @@ class Orchestrator:
             # ------------------------------------------------------------ #
             console.print("\n[bold]Step 4/6 — Planning[/bold]")
             planner = Planner(
-                self.claude, self.config, repo_path, self.prompts["planner"]
+                api_key=self.llm_api_key,
+                base_url=self.llm_base_url,
+                config=self.config,
+                repo_path=repo_path,
+                system_prompt=self.prompts["planner"],
             )
             plan = planner.plan(issue, repo_map)
             (run_dir / "plan.json").write_text(plan.model_dump_json(indent=2))
@@ -124,7 +127,11 @@ class Orchestrator:
             # ------------------------------------------------------------ #
             console.print("\n[bold]Step 5/6 — Coding + Validation[/bold]")
             coder = Coder(
-                self.claude, self.config, repo_path, self.prompts["coder"]
+                api_key=self.llm_api_key,
+                base_url=self.llm_base_url,
+                config=self.config,
+                repo_path=repo_path,
+                system_prompt=self.prompts["coder"],
             )
             validator = Validator(
                 repo_path,
@@ -203,7 +210,12 @@ class Orchestrator:
             else:
                 console.print("[yellow]⚠ No changes to commit[/yellow]")
 
-            pr_writer = PRWriter(self.claude, self.config, self.prompts["pr_writer"])
+            pr_writer = PRWriter(
+                api_key=self.llm_api_key,
+                base_url=self.llm_base_url,
+                config=self.config,
+                system_prompt=self.prompts["pr_writer"],
+            )
             pr_title, pr_body = pr_writer.write(issue, plan, diff, linked_prs)
 
             pr_summary = f"# {pr_title}\n\n{pr_body}"

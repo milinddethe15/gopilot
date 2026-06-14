@@ -1,5 +1,5 @@
-model: gpt-5.4-long-context
+model: openai/gpt-4o
 max_planning_tool_calls: 15
 max_validation_retries: 3
-max_tokens: 2666
+max_tokens: 8192
 go_test_timeout: 120s
