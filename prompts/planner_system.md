@@ -16,6 +16,7 @@ Follow these steps in order:
    (table-driven? testify? sub-tests?).
 5. **Check related code** — if the fix touches multiple areas, read all of them.
 6. **Output the plan** — only after you have read the relevant code.
+7. **Stop and output** — Do not loop endlessly! Once you have found the right files and understand what needs to be changed, STOP calling tools and output your final JSON plan immediately. You have a maximum of 15 tool calls before the system terminates your run.
 
 # Available Tools
 

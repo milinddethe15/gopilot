@@ -221,19 +221,19 @@ class Planner:
 
     def _execute_tool(self, name: str, inputs: dict[str, Any]) -> str:
         if name == "read_file":
-            return read_file(self.repo_path, inputs["path"])
+            output = read_file(self.repo_path, inputs["path"])
 
-        if name == "search_code":
-            return self.searcher.search(
+        elif name == "search_code":
+            output = self.searcher.search(
                 pattern=inputs["pattern"],
                 file_glob=inputs.get("file_glob", "*.go"),
                 context_lines=int(inputs.get("context_lines", 3)),
             )
 
-        if name == "list_directory":
-            return list_directory(self.repo_path, inputs.get("path", "."))
+        elif name == "list_directory":
+            output = list_directory(self.repo_path, inputs.get("path", "."))
 
-        if name == "run_go_doc":
+        elif name == "run_go_doc":
             result = subprocess.run(
                 ["go", "doc", inputs["symbol"]],
                 cwd=self.repo_path,
@@ -241,9 +241,18 @@ class Planner:
                 text=True,
                 timeout=15,
             )
-            return result.stdout or result.stderr or "(no output)"
+            output = result.stdout or result.stderr or "(no output)"
 
-        return f"Unknown tool: {name}"
+        else:
+            output = f"Unknown tool: {name}"
+
+        # Truncate extremely long outputs to prevent blowing up the context window
+        # 16000 chars is roughly 4000 tokens. 
+        if len(output) > 16000:
+            half = 8000
+            output = output[:half] + f"\n\n... [Output truncated. Total length: {len(output)} chars] ...\n\n" + output[-half:]
+            
+        return output
 
     # ------------------------------------------------------------------ #
     #  Helpers                                                             #
@@ -251,15 +260,20 @@ class Planner:
 
     @staticmethod
     def _build_user_message(issue: Issue, repo_map: str) -> str:
+        body = issue.body or "(no body)"
+        if len(body) > 20000:
+            body = body[:20000] + "\n\n... [Issue body truncated] ..."
+            
         parts = [
             f"## GitHub Issue #{issue.number}: {issue.title}",
             "",
-            issue.body or "(no body)",
+            body,
         ]
         if issue.comments:
             parts += ["", "### Comments"]
             for i, c in enumerate(issue.comments[:10], 1):
-                parts.append(f"**Comment {i}:**\n{c}")
+                comment_text = c if len(c) < 5000 else c[:5000] + "\n... [Comment truncated] ..."
+                parts.append(f"**Comment {i}:**\n{comment_text}")
         if issue.labels:
             parts += ["", f"Labels: {', '.join(issue.labels)}"]
         parts += ["", "---", "", "## Repository Map", "", repo_map]

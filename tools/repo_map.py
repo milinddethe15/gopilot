@@ -49,7 +49,12 @@ class RepoMapper:
         if conventions:
             sections.append("\n### Conventions Detected\n" + "\n".join(f"  • {c}" for c in conventions))
 
-        return "\n".join(sections)
+        full_map = "\n".join(sections)
+        max_len = 50000
+        if len(full_map) > max_len:
+            full_map = full_map[:max_len] + f"\n\n... [Repo map truncated. Total length: {len(full_map)} chars] ..."
+            
+        return full_map
 
     # ------------------------------------------------------------------ #
     #  Package structure via go list                                       #

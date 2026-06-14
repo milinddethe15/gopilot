@@ -61,10 +61,14 @@ class PRWriter:
     def _build_message(
         self, issue: Issue, plan: Plan, diff: str, linked_prs: list[LinkedPR]
     ) -> str:
+        body = issue.body or "(no body)"
+        if len(body) > 20000:
+            body = body[:20000] + "\n\n... [Issue body truncated] ..."
+            
         parts = [
             f"## Issue #{issue.number}: {issue.title}",
             "",
-            issue.body or "(no body)",
+            body,
             "",
             "## Implementation Plan",
             f"**Understanding:** {plan.understanding}",

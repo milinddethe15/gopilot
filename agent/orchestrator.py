@@ -145,6 +145,13 @@ class Orchestrator:
             for attempt in range(max_retries + 1):
                 if attempt > 0:
                     console.print(f"\n[yellow]↺ Retry {attempt}/{max_retries}[/yellow]")
+                    
+                    # On retry, reset to HEAD before generating edits so the Coder sees a clean slate
+                    subprocess.run(
+                        ["git", "checkout", "HEAD", "--", "."],
+                        cwd=repo_path,
+                        capture_output=True,
+                    )
 
                 edits = coder.generate_edits(
                     issue=issue,
@@ -156,14 +163,6 @@ class Orchestrator:
                 if not edits:
                     console.print("[red]✗ Coder produced no edits — aborting[/red]")
                     break
-
-                # On retry, reset to HEAD before re-applying (clean slate)
-                if attempt > 0:
-                    subprocess.run(
-                        ["git", "checkout", "HEAD", "--", "."],
-                        cwd=repo_path,
-                        capture_output=True,
-                    )
 
                 try:
                     coder.apply_edits(edits)

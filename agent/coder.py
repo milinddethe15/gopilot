@@ -171,15 +171,16 @@ class Coder:
             parts += [
                 "# Validation Failed — Corrective Edit Required",
                 "",
-                "The previous edits were applied but validation failed. "
-                "Produce ONLY the corrective SEARCH/REPLACE block(s) needed to fix the errors below.",
+                "Your previous edits were applied to a clean repository, but validation failed. ",
+                "The repository has now been reset to its original state.",
+                "Generate the FULL set of SEARCH/REPLACE block(s) from scratch, incorporating the necessary fixes for the errors below.",
                 "",
                 "## Validation Errors",
                 "```",
                 validation_error.error_summary,
                 "```",
                 "",
-                "## Previous Edits Applied",
+                "## Previous Edits Applied (For Reference)",
             ]
             for e in previous_edits:
                 parts += [
@@ -214,6 +215,8 @@ class Coder:
 
         parts += ["## File Contents", ""]
         for path, content in file_contents.items():
+            if len(content) > 120000:
+                content = content[:60000] + f"\n\n// ... [File {path} truncated. Total length: {len(content)} chars] ...\n\n" + content[-60000:]
             parts += [
                 f"### {path}",
                 "```go",

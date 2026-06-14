@@ -66,14 +66,23 @@ def apply_search_replace(
     content = full.read_text(errors="replace")
 
     # --- exact match ---
-    if search in content:
+    count = content.count(search)
+    if count == 1:
         full.write_text(content.replace(search, replace, 1))
         return
+    elif count > 1:
+        raise EditApplicationError(
+            f"SEARCH block is not unique. It matches {count} locations in {relative_path}.\n"
+            f"Your search block was:\n```\n{search}\n```\n"
+            f"Please include 3-5 MORE lines of surrounding context (from before and after this block) to make it unique."
+        )
 
     # --- normalised-whitespace match ---
     norm_search = _normalise(search)
     norm_content = _normalise(content)
-    if norm_search in norm_content:
+    
+    norm_count = norm_content.count(norm_search)
+    if norm_count == 1:
         # Locate the matching region in the original and replace it
         idx = norm_content.index(norm_search)
         # Map normalised index back to original: rebuild mapping
@@ -81,6 +90,12 @@ def apply_search_replace(
         orig_end = _map_normalised_index(content, idx + len(norm_search))
         full.write_text(content[:orig_idx] + replace + content[orig_end:])
         return
+    elif norm_count > 1:
+        raise EditApplicationError(
+            f"SEARCH block (with normalized whitespace) is not unique. It matches {norm_count} locations in {relative_path}.\n"
+            f"Your search block was:\n```\n{search}\n```\n"
+            f"Please include 3-5 MORE lines of surrounding context (from before and after this block) to make it unique."
+        )
 
     raise EditApplicationError(
         f"SEARCH block not found in {relative_path}.\n"
@@ -91,8 +106,8 @@ def apply_search_replace(
 
 
 def _normalise(s: str) -> str:
-    """Strip trailing whitespace from each line for fuzzy matching."""
-    return "\n".join(line.rstrip() for line in s.splitlines())
+    """Strip leading and trailing whitespace from each line for fuzzy matching."""
+    return "\n".join(line.strip() for line in s.splitlines())
 
 
 def _map_normalised_index(original: str, norm_idx: int) -> int:
@@ -104,9 +119,10 @@ def _map_normalised_index(original: str, norm_idx: int) -> int:
     norm_pos = 0
     lines = original.split("\n")
     for line in lines:
-        stripped = line.rstrip()
+        stripped = line.strip()
+        leading_spaces = len(line) - len(line.lstrip())
         if norm_pos + len(stripped) > norm_idx:
-            return orig_pos + (norm_idx - norm_pos)
+            return orig_pos + leading_spaces + (norm_idx - norm_pos)
         norm_pos += len(stripped) + 1   # +1 for \n
         orig_pos += len(line) + 1
         if norm_pos > norm_idx:
