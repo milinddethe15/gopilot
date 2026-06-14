@@ -1,0 +1,124 @@
+diff --git a/baked_in.go b/baked_in.go
+index 679729a..386b185 100644
+--- a/baked_in.go
++++ b/baked_in.go
+@@ -252,6 +252,7 @@ var (
+ 		"bic":                           isIsoBic2022Format,
+ 		"semver":                        isSemverFormat,
+ 		"dns_rfc1035_label":             isDnsRFC1035LabelFormat,
++		"dns_label":                     isDnsRFC1123LabelFormat,
+ 		"credit_card":                   isCreditCard,
+ 		"cve":                           isCveFormat,
+ 		"luhn_checksum":                 hasLuhnChecksum,
+@@ -3393,6 +3394,13 @@ func isDnsRFC1035LabelFormat(fl FieldLevel) bool {
+ 	return dnsRegexRFC1035Label().MatchString(val)
+ }
+ 
++// isDnsRFC1123LabelFormat is the validation function
++// for validating if the current field's value is
++// a valid single dns RFC 1123 label, defined in RFC 1123.
++func isDnsRFC1123LabelFormat(fl FieldLevel) bool {
++	return dnsRegexRFC1123Label().MatchString(fl.Field().String())
++}
++
+ // digitsHaveLuhnChecksum returns true if and only if the last element of the given digits slice is the Luhn checksum of the previous elements
+ func digitsHaveLuhnChecksum(digits []string) bool {
+ 	size := len(digits)
+diff --git a/doc.go b/doc.go
+index 7b1fd07..f321daa 100644
+--- a/doc.go
++++ b/doc.go
+@@ -1505,6 +1505,14 @@ More information on https://datatracker.ietf.org/doc/html/rfc1035
+ 
+ 	Usage: dns_rfc1035_label
+ 
++# DNS label
++
++This validates that a string value is a valid single dns RFC 1123 label.
++It allows alphanumeric characters and hyphens, must start and end with an
++alphanumeric character, must be 1-63 characters long, and forbids dots.
++
++	Usage: dns_label
++
+ # TimeZone
+ 
+ This validates that a string value is a valid time zone based on the time zone database present on the system.
+diff --git a/regexes.go b/regexes.go
+index 20c03b8..8ed1db1 100644
+--- a/regexes.go
++++ b/regexes.go
+@@ -74,6 +74,7 @@ const (
+ 	bic2022RegexString               = `^[A-Z0-9]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$`
+ 	semverRegexString                = `^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$` // numbered capture groups https://semver.org/
+ 	dnsRegexStringRFC1035Label       = "^[a-z]([-a-z0-9]*[a-z0-9])?$"
++	dnsRegexStringRFC1123Label       = "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$"
+ 	cveRegexString                   = `^CVE-(1999|2\d{3})-(0[^0]\d{2}|0\d[^0]\d{1}|0\d{2}[^0]|[1-9]{1}\d{3,})$` // CVE Format Id https://cve.mitre.org/cve/identifiers/syntaxchange.html
+ 	mongodbIdRegexString             = "^[a-f\\d]{24}$"
+ 	mongodbConnStringRegexString     = "^mongodb(\\+srv)?:\\/\\/(([a-zA-Z\\d]+):([a-zA-Z\\d$:\\/?#\\[\\]@]+)@)?(([a-z\\d.-]+)(:[\\d]+)?)((,(([a-z\\d.-]+)(:(\\d+))?))*)?(\\/[a-zA-Z-_]{1,64})?(\\?(([a-zA-Z]+)=([a-zA-Z\\d]+))(&(([a-zA-Z\\d]+)=([a-zA-Z\\d]+))?)*)?$"
+@@ -162,6 +163,7 @@ var (
+ 	bic2022Regex               = lazyRegexCompile(bic2022RegexString)
+ 	semverRegex                = lazyRegexCompile(semverRegexString)
+ 	dnsRegexRFC1035Label       = lazyRegexCompile(dnsRegexStringRFC1035Label)
++	dnsRegexRFC1123Label       = lazyRegexCompile(dnsRegexStringRFC1123Label)
+ 	cveRegex                   = lazyRegexCompile(cveRegexString)
+ 	mongodbIdRegex             = lazyRegexCompile(mongodbIdRegexString)
+ 	mongodbConnectionRegex     = lazyRegexCompile(mongodbConnStringRegexString)
+diff --git a/validator_test.go b/validator_test.go
+index 67d3f83..f47804c 100644
+--- a/validator_test.go
++++ b/validator_test.go
+@@ -14547,6 +14547,54 @@ func TestRFC1035LabelFormatValidation(t *testing.T) {
+ 	}
+ }
+ 
++func TestDNSLabelFormatValidation(t *testing.T) {
++	tests := []struct {
++		value    string `validate:"dns_label"`
++		tag      string
++		expected bool
++	}{
++		{"abc", "dns_label", true},
++		{"ABC", "dns_label", true},
++		{"abc-123", "dns_label", true},
++		{"ABC-123", "dns_label", true},
++		{"123-abc", "dns_label", true},
++		{"1", "dns_label", true},
++		{"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk", "dns_label", true},
++		{"", "dns_label", false},
++		{"abc-", "dns_label", false},
++		{"-abc", "dns_label", false},
++		{"abc.def", "dns_label", false},
++		{"test.example.com", "dns_label", false},
++		{"abc..def", "dns_label", false},
++		{"test_example", "dns_label", false},
++		{"foo bar", "dns_label", false},
++		{"foo/bar", "dns_label", false},
++		{"foo$", "dns_label", false},
++		{"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "dns_label", false},
++	}
++
++	validate := New()
++
++	for i, test := range tests {
++		errs := validate.Var(test.value, test.tag)
++
++		if test.expected {
++			if !IsEqual(errs, nil) {
++				t.Fatalf("Index: %d dns_label failed Error: %s", i, errs)
++			}
++		} else {
++			if IsEqual(errs, nil) {
++				t.Fatalf("Index: %d dns_label failed Error: %s", i, errs)
++			} else {
++				val := getError(errs, "", "")
++				if val.Tag() != "dns_label" {
++					t.Fatalf("Index: %d dns_label failed Error: %s", i, errs)
++				}
++			}
++		}
++	}
++}
++
+ func TestPostCodeByIso3166Alpha2(t *testing.T) {
+ 	tests := map[string][]struct {
+ 		value    string

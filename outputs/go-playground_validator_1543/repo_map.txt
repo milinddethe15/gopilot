@@ -1,0 +1,521 @@
+# Repo Map — github.com/go-playground/validator/v10
+
+## Packages
+  github.com/go-playground/validator/v10
+    baked_in.go, cache.go, country_codes.go, currency_codes.go, doc.go, errors.go, field_level.go, language_codes.go, no_validate_fn.go, options.go, postcode_regexes.go, regexes.go, struct_level.go, translations.go, util.go, validator.go, validator_instance.go, [test] benchmarks_test.go, [test] validator_test.go
+  github.com/go-playground/validator/v10/non-standard/validators
+    notblank.go, [test] notblank_test.go
+  github.com/go-playground/validator/v10/translations/ar
+    ar.go, [test] ar_test.go
+  github.com/go-playground/validator/v10/translations/de
+    de.go, [test] de_test.go
+  github.com/go-playground/validator/v10/translations/en
+    en.go, [test] en_test.go
+  github.com/go-playground/validator/v10/translations/es
+    es.go, [test] es_test.go
+  github.com/go-playground/validator/v10/translations/fa
+    fa.go, [test] fa_test.go
+  github.com/go-playground/validator/v10/translations/fr
+    fr.go, [test] fr_test.go
+  github.com/go-playground/validator/v10/translations/id
+    id.go, [test] id_test.go
+  github.com/go-playground/validator/v10/translations/it
+    it.go, [test] it_test.go
+  github.com/go-playground/validator/v10/translations/ja
+    ja.go, [test] ja_test.go
+  github.com/go-playground/validator/v10/translations/ko
+    ko.go, [test] ko_test.go
+  github.com/go-playground/validator/v10/translations/lv
+    lv.go, [test] lv_test.go
+  github.com/go-playground/validator/v10/translations/nl
+    nl.go, [test] nl_test.go
+  github.com/go-playground/validator/v10/translations/pl
+    pl.go, [test] pl_test.go
+  github.com/go-playground/validator/v10/translations/pt
+    pt.go, [test] pt_test.go
+  github.com/go-playground/validator/v10/translations/pt_BR
+    pt_BR.go, [test] pt_BR_test.go
+  github.com/go-playground/validator/v10/translations/ru
+    ru.go, [test] ru_test.go
+  github.com/go-playground/validator/v10/translations/th
+    th.go, [test] th_test.go
+  github.com/go-playground/validator/v10/translations/tr
+    tr.go, [test] tr_test.go
+  github.com/go-playground/validator/v10/translations/uk
+    uk.go, [test] uk_test.go
+  github.com/go-playground/validator/v10/translations/vi
+    vi.go, [test] vi_test.go
+  github.com/go-playground/validator/v10/translations/zh
+    zh.go, [test] zh_test.go
+  github.com/go-playground/validator/v10/translations/zh_tw
+    zh_tw.go, [test] zh_tw_test.go
+
+## Symbols
+
+### baked_in.go
+  type Func …
+  type FuncCtx …
+  func wrapFunc(…)
+  func parseOneOfParam2(…)
+  func isURLEncoded(…)
+  func isHTMLEncoded(…)
+  func isHTML(…)
+  func isOneOf(…)
+  func isOneOfCI(…)
+  func isNoneOf(…)
+  func isNoneOfCI(…)
+  func isUnique(…)
+  func isMAC(…)
+  func isCIDRv4(…)
+  func isCIDRv6(…)
+  func isCIDR(…)
+  func isIPv4(…)
+  func isIPv6(…)
+  func isIP(…)
+  func isSSN(…)
+  func isLongitude(…)
+  func isLatitude(…)
+  func isDataURI(…)
+  func hasMultiByteCharacter(…)
+  func isPrintableASCII(…)
+  func isASCII(…)
+  func isUUID5(…)
+  func isUUID4(…)
+  func isUUID3(…)
+  func isUUID(…)
+  func isUUID5RFC4122(…)
+  func isUUID4RFC4122(…)
+  func isUUID3RFC4122(…)
+  func isUUIDRFC4122(…)
+  func isULID(…)
+  func isMD4(…)
+  func isMD5(…)
+  func isSHA256(…)
+  func isSHA384(…)
+  func isSHA512(…)
+
+### cache.go
+  type tagType …
+  type structCache …
+  func (sc *structCache) Get(…)
+  func (sc *structCache) Set(…)
+  type tagCache …
+  func (tc *tagCache) Get(…)
+  func (tc *tagCache) Set(…)
+  type cStruct …
+  type cField …
+  type cTag …
+  func (v *Validate) extractStructCache(…)
+  func (v *Validate) parseFieldTagsRecursive(…)
+  func (v *Validate) fetchCacheTag(…)
+
+### errors.go
+  type ValidationErrorsTranslations …
+  type InvalidValidationError …
+  func (e *InvalidValidationError) Error(…)
+  func (ve ValidationErrors) Error(…)
+  func (ve ValidationErrors) Translate(…)
+  type FieldError …
+  type fieldError …
+  func (fe *fieldError) Tag(…)
+  func (fe *fieldError) ActualTag(…)
+  func (fe *fieldError) Namespace(…)
+  func (fe *fieldError) StructNamespace(…)
+  func (fe *fieldError) Field(…)
+  func (fe *fieldError) StructField(…)
+  func (fe *fieldError) Value(…)
+  func (fe *fieldError) Param(…)
+  func (fe *fieldError) Kind(…)
+  func (fe *fieldError) Type(…)
+  func (fe *fieldError) Error(…)
+  func (fe *fieldError) Translate(…)
+
+### field_level.go
+  type FieldLevel …
+  func (v *validate) Field(…)
+  func (v *validate) FieldName(…)
+  func (v *validate) GetTag(…)
+  func (v *validate) StructFieldName(…)
+  func (v *validate) Param(…)
+  func (v *validate) GetStructFieldOK(…)
+  func (v *validate) GetStructFieldOKAdvanced(…)
+  func (v *validate) GetStructFieldOK2(…)
+  func (v *validate) GetStructFieldOKAdvanced2(…)
+
+### no_validate_fn.go
+  func isValidateFn(…)
+  func tryCallValidateFn(…)
+
+### options.go
+  type Option …
+  func WithRequiredStructEnabled(…)
+  func WithPrivateFieldValidation(…)
+  func WithTagNameFuncBlankOmit(…)
+
+### postcode_regexes.go
+  func initPostcodes(…)
+
+### regexes.go
+  func lazyRegexCompile(…)
+
+### struct_level.go
+  type StructLevelFunc …
+  type StructLevelFuncCtx …
+  func wrapStructLevelFunc(…)
+  type StructLevel …
+  func (v *validate) Top(…)
+  func (v *validate) Parent(…)
+  func (v *validate) Current(…)
+  func (v *validate) Validator(…)
+  func (v *validate) ExtractType(…)
+  func (v *validate) ReportError(…)
+  func (v *validate) ReportValidationErrors(…)
+
+### translations.go
+  type TranslationFunc …
+  type RegisterTranslationsFunc …
+
+### util.go
+  type Valuer …
+  func (v *validate) extractTypeInternal(…)
+  func (v *validate) getStructFieldOKInternal(…)
+  func asInt(…)
+  func asIntFromTimeDuration(…)
+  func asIntFromType(…)
+  func asUint(…)
+  func asFloat64(…)
+  func asFloat32(…)
+  func asBool(…)
+  func panicIf(…)
+  func fieldMatchesRegexByStringerValOrString(…)
+
+### validator.go
+  type validate …
+  func (v *validate) validateStruct(…)
+  func (v *validate) traverseField(…)
+  func appendAltName(…)
+  func getValue(…)
+
+### validator_instance.go
+  type FilterFunc …
+  type CustomTypeFunc …
+  type TagNameFunc …
+  type internalValidationFuncWrapper …
+  type Validate …
+  func New(…)
+  func (v *Validate) SetTagName(…)
+  func (v Validate) ValidateMapCtx(…)
+  func (v *Validate) ValidateMap(…)
+  func (v *Validate) RegisterTagNameFunc(…)
+  func (v *Validate) RegisterValidation(…)
+  func (v *Validate) RegisterValidationCtx(…)
+  func (v *Validate) RegisterAlias(…)
+  func (v *Validate) RegisterStructValidation(…)
+  func (v *Validate) RegisterStructValidationCtx(…)
+  func (v *Validate) RegisterStructValidationMapRules(…)
+  func (v *Validate) RegisterCustomTypeFunc(…)
+  func (v *Validate) RegisterTranslation(…)
+  func (v *Validate) Struct(…)
+  func (v *Validate) StructCtx(…)
+  func (v *Validate) StructFiltered(…)
+  func (v *Validate) StructFilteredCtx(…)
+  func (v *Validate) StructPartial(…)
+  func (v *Validate) StructPartialCtx(…)
+  func (v *Validate) StructExcept(…)
+  func (v *Validate) StructExceptCtx(…)
+  func (v *Validate) Var(…)
+  func (v *Validate) VarCtx(…)
+  func (v *Validate) VarWithValue(…)
+  func (v *Validate) VarWithValueCtx(…)
+  func (v *Validate) VarWithKey(…)
+  func (v *Validate) VarWithKeyCtx(…)
+  func (v *Validate) registerValidation(…)
+
+### benchmarks_test.go
+  func BenchmarkFieldSuccess(…)
+  func BenchmarkFieldSuccessParallel(…)
+  func BenchmarkFieldFailure(…)
+  func BenchmarkFieldFailureParallel(…)
+  func BenchmarkFieldArrayDiveSuccess(…)
+  func BenchmarkFieldArrayDiveSuccessParallel(…)
+  func BenchmarkFieldArrayDiveFailure(…)
+  func BenchmarkFieldArrayDiveFailureParallel(…)
+  func BenchmarkFieldMapDiveSuccess(…)
+  func BenchmarkFieldMapDiveSuccessParallel(…)
+  func BenchmarkFieldMapDiveFailure(…)
+  func BenchmarkFieldMapDiveFailureParallel(…)
+  func BenchmarkFieldMapDiveWithKeysSuccess(…)
+  func BenchmarkFieldMapDiveWithKeysSuccessParallel(…)
+  func BenchmarkFieldMapDiveWithKeysFailure(…)
+  func BenchmarkFieldMapDiveWithKeysFailureParallel(…)
+  func BenchmarkFieldCustomTypeSuccess(…)
+  func BenchmarkFieldCustomTypeSuccessParallel(…)
+  func BenchmarkFieldCustomTypeFailure(…)
+  func BenchmarkFieldCustomTypeFailureParallel(…)
+  func BenchmarkFieldOrTagSuccess(…)
+  func BenchmarkFieldOrTagSuccessParallel(…)
+  func BenchmarkFieldOrTagFailure(…)
+  func BenchmarkFieldOrTagFailureParallel(…)
+  func BenchmarkStructLevelValidationSuccess(…)
+  func BenchmarkStructLevelValidationSuccessParallel(…)
+  func BenchmarkStructLevelValidationFailure(…)
+  func BenchmarkStructLevelValidationFailureParallel(…)
+  func BenchmarkStructSimpleCustomTypeSuccess(…)
+  func BenchmarkStructSimpleCustomTypeSuccessParallel(…)
+  func BenchmarkStructSimpleCustomTypeFailure(…)
+  func BenchmarkStructSimpleCustomTypeFailureParallel(…)
+  func BenchmarkStructFilteredSuccess(…)
+  func BenchmarkStructFilteredSuccessParallel(…)
+  func BenchmarkStructFilteredFailure(…)
+  func BenchmarkStructFilteredFailureParallel(…)
+  func BenchmarkStructPartialSuccess(…)
+  func BenchmarkStructPartialSuccessParallel(…)
+  func BenchmarkStructPartialFailure(…)
+  func BenchmarkStructPartialFailureParallel(…)
+
+### validator_test.go
+  type Impl …
+  func (i *Impl) Foo(…)
+  type SubTest …
+  type TestInterface …
+  type TestString …
+  type TestUint64 …
+  type TestFloat64 …
+  type TestSlice …
+  func AssertError(…)
+  func AssertDeepError(…)
+  func getError(…)
+  type valuer …
+  func (v valuer) Value(…)
+  type MadeUpCustomType …
+  func ValidateCustomType(…)
+  func OverrideIntTypeForSomeReason(…)
+  type CustomMadeUpStruct …
+  func ValidateValuerType(…)
+  type TestPartial …
+  type TestStruct …
+  func StructValidationTestStructSuccess(…)
+  func StructValidationTestStruct(…)
+  func StructValidationNoTestStructCustomName(…)
+  func StructValidationTestStructInvalid(…)
+  func StructValidationTestStructReturnValidationErrors(…)
+  func StructValidationTestStructReturnValidationErrors2(…)
+  type TestStructReturnValidationErrorsInner2 …
+  type TestStructReturnValidationErrorsInner1 …
+  type TestStructReturnValidationErrors …
+  type StructLevelInvalidErr …
+  func StructLevelInvalidError(…)
+  func stringPtr(…)
+  func intPtr(…)
+  func float64Ptr(…)
+  func TestStructLevelInvalidError(…)
+  func TestNameNamespace(…)
+  func TestBlankTagNameFuncOmitsNamespace(…)
+  func TestAnonymous(…)
+  func TestAnonymousSameStructDifferentTags(…)
+  func TestStructLevelReturnValidationErrors(…)
+
+### non-standard/validators/notblank.go
+  func NotBlank(…)
+
+### non-standard/validators/notblank_test.go
+  type test …
+  func TestNotBlank(…)
+
+### translations/ar/ar.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/ar/ar_test.go
+  func TestTranslations(…)
+
+### translations/de/de.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/de/de_test.go
+  func TestTranslations(…)
+
+### translations/en/en.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/en/en_test.go
+  type Foo …
+  func (Foo) IsBar(…)
+  func TestTranslations(…)
+
+### translations/es/es.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/es/es_test.go
+  func TestTranslations(…)
+
+### translations/fa/fa.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/fa/fa_test.go
+  func TestTranslations(…)
+
+### translations/fr/fr.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/fr/fr_test.go
+  func TestTranslations(…)
+
+### translations/id/id.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+  func translateFuncWithParam(…)
+
+### translations/id/id_test.go
+  func InitValidator(…)
+  func TestFieldTagsTranslations(…)
+  func TestNetworkTagsTranslations(…)
+  func TestStringTagsTranslations(…)
+  func TestFormatTagsTranslations(…)
+  func TestComparisonTagsTranslations(…)
+  func TestOtherTagsTranslations(…)
+  func TestAliasesTagsTranslations(…)
+
+### translations/it/it.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+  func customTransFuncV1(…)
+
+### translations/it/it_test.go
+  func TestTranslations(…)
+
+### translations/ja/ja.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/ja/ja_test.go
+  func TestTranslations(…)
+
+### translations/ko/ko.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/ko/ko_test.go
+  func TestTranslations(…)
+
+### translations/lv/lv.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/lv/lv_test.go
+  func TestTranslations(…)
+
+### translations/nl/nl.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/nl/nl_test.go
+  func TestTranslations(…)
+
+### translations/pl/pl.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+  func translateFuncWithParam(…)
+  func registerCardinals(…)
+
+### translations/pl/pl_test.go
+  func TestTranslations(…)
+
+### translations/pt/pt.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/pt/pt_test.go
+  func TestTranslations(…)
+
+### translations/pt_BR/pt_BR.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/pt_BR/pt_BR_test.go
+  type Foo …
+  func (Foo) IsBar(…)
+  func TestTranslations(…)
+
+### translations/ru/ru.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/ru/ru_test.go
+  func TestTranslations(…)
+
+### translations/th/th.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/th/th_test.go
+  func TestTranslations(…)
+
+### translations/tr/tr.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/tr/tr_test.go
+  func TestTranslations(…)
+
+### translations/uk/uk.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+  func translateFuncWithParam(…)
+  func registerCardinals(…)
+
+### translations/uk/uk_test.go
+  func TestTranslations(…)
+
+### translations/vi/vi.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/vi/vi_test.go
+  func TestTranslations(…)
+
+### translations/zh/zh.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/zh/zh_test.go
+  func TestTranslations(…)
+
+### translations/zh_tw/zh_tw.go
+  func RegisterDefaultTranslations(…)
+  func registrationFunc(…)
+  func translateFunc(…)
+
+### translations/zh_tw/zh_tw_test.go
+  func TestTranslations(…)
+
+### Conventions Detected
+  • Error wrapping: fmt.Errorf("...: %w", err)
+  • Tests use t.Run() sub-tests
+  • Table-driven tests with named cases

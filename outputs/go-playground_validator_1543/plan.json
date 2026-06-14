@@ -1,0 +1,24 @@
+{
+  "understanding": "The issue asks for a new baked-in validator tag for validating a single RFC 1123 DNS/hostname label, intended for values like a tenant subdomain prefix or Kubernetes-style name segment. Unlike the existing hostname_rfc1123 validator, this new tag must reject dots and validate only one label with alphanumeric/hyphen characters, alphanumeric start and end, and length 1 through 63.",
+  "root_cause": "The existing hostname_rfc1123 validator uses hostnameRegexStringRFC1123, which explicitly allows multiple dot-separated labels. The existing dns_rfc1035_label validator is not a substitute because it follows RFC 1035 rules: lowercase only and must start with a letter, so it rejects valid RFC 1123 single-label values such as uppercase labels or labels starting with digits.",
+  "files_to_modify": [
+    "regexes.go",
+    "baked_in.go",
+    "validator_test.go",
+    "doc.go"
+  ],
+  "new_files": [],
+  "approach": "Add a new baked-in tag named dns_label, matching the issue's example. In regexes.go, add a new regex constant near the existing hostname/DNS label regexes, using the exact RFC 1123 single-label pattern: `^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`. Add a corresponding lazyRegexCompile variable, e.g. dnsRegexStringRFC1123Label and dnsRegexRFC1123Label, near dnsRegexRFC1035Label. In baked_in.go, add `\"dns_label\": isDnsRFC1123LabelFormat` to bakedInValidators near `dns_rfc1035_label`. Implement `isDnsRFC1123LabelFormat(fl FieldLevel) bool` near `isDnsRFC1035LabelFormat`, returning `dnsRegexRFC1123Label().MatchString(fl.Field().String())`. Do not alter hostname_rfc1123 or dns_rfc1035_label behavior. In doc.go, add a short baked-in validator section near the existing RFC 1035 label section documenting that `dns_label` validates a single RFC 1123 DNS label, allows alphanumeric and hyphen, must start/end alphanumeric, is 1-63 chars, and forbids dots.",
+  "test_strategy": "Add a new test function in validator_test.go near TestHostnameRFC1123Validation or TestRFC1035LabelFormatValidation, following the existing table-driven style with validate := New(), validate.Var(value, tag), IsEqual checks, getError, and Tag() assertion. Include passing cases: `abc`, `ABC`, `abc-123`, `ABC-123`, `123-abc`, `1`, and a 63-character label. Include failing cases: empty string, `abc-`, `-abc`, `abc.def`, `test.example.com`, `abc..def`, `test_example`, `foo bar`, `foo/bar`, `foo$`, and a 64-character label. Assert failed errors report tag `dns_label`.",
+  "go_test_targets": [
+    "./..."
+  ],
+  "conventions_noted": [
+    "Baked-in validators are registered in the bakedInValidators map in baked_in.go.",
+    "Regex strings and lazy compiled regex variables are centralized in regexes.go.",
+    "Validator implementation functions generally live in baked_in.go and call the compiled regex against fl.Field().String().",
+    "Existing tests in validator_test.go use table-driven loops with validate.Var, IsEqual(errs, nil), getError(errs, \"\", \"\"), and Tag() checks rather than testify.",
+    "Documentation for baked-in tags is maintained in doc.go as package comments under the Baked In Validators section.",
+    "Not every baked-in validator has translation entries; dns_rfc1035_label currently has no translation entries, so translations do not need to be modified for this minimal enhancement."
+  ]
+}

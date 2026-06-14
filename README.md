@@ -2,6 +2,16 @@
 
 An agentic AI system that reads GitHub issues from open-source Go projects, explores the codebase, generates a fix, validates it with the Go toolchain, and writes a PR summary.
 
+## Demo
+
+Watch the agent autonomously resolve a real issue:
+
+![Agent Demo](outputs/go-playground_validator_1543/demo.mp4)
+
+- **Issue:** [go-playground/validator#1543](https://github.com/go-playground/validator/issues/1543)
+- **Generated Patch**: [diff.patch](outputs/go-playground_validator_1543/diff.patch)
+- **Output Artifacts:** Check out the [`outputs/go-playground_validator_1543/`](outputs/go-playground_validator_1543/) directory to see the exact planner outputs, tool calls, diffs, and validation logs generated during this run.
+
 ## Architecture
 
 Each layer uses the best-fit tool rather than building from scratch.
